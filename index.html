@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Orbit Animation</title>
+        <style>
+            body{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 800px;
+                background: #002;
+                flex-direction: column;
+                background-image: linear-gradient(#203, #002);
+                background-repeat: no-repeat;
+            }
+            canvas {
+                /* border: 1px solid black; */
+            }
+            h1, h2, p{
+                margin: 0px;
+                padding: 0px;
+                color: white;
+                font-family: sans-serif;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Time</h1>
+        <p id="timer">00:00:00</p>
+        <canvas id="canvas" width="1024" height="800"></canvas>
+        <p id="moon_angle">moon angle</p>
+        <p id="player_angle">player angle</p>
+        <button onclick="changeDirection()">Change Direction</button>
+
+        <script>
+            const EARTH_RADIUS = 200; // in pixels
+            const MOON_RADIUS = 20; // in pixels
+            const EARTH_ORBIT_RADIUS = 0; // in pixels
+            const MOON_ORBIT_RADIUS = 260; // in pixels
+
+            let PLAYER_RADIUS = 50;
+            let PLAYER_ORBIT_RADIUS = 250;
+
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+            const moonPosition = document.getElementById("moon_angle");
+            const playerPosition = document.getElementById("player_angle");
+
+            let earthAngle = 0;
+            let moonAngle = -1.57;
+            let playerAngle = 5.5;
+
+            let direction = 'right';
+            const earthX = canvas.width / 2 + EARTH_ORBIT_RADIUS * Math.cos(earthAngle);
+            const earthY = canvas.height / 2 + EARTH_ORBIT_RADIUS * Math.sin(earthAngle);
+
+            let playerState = 'idle';
+            let gameOver = false;
+
+            function animate() {
+                if(!gameOver){
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    drawEarth();
+                    drawPlayer();
+                    drawMoon();
+
+                    //reset the angle
+                    resetMoonAngle();
+
+                    //change direction
+                    checkDirection();
+
+                    //check if player hit
+                    checkHit(moonAngle, playerAngle, playerState);
+
+                    moonPosition.innerHTML = moonAngle.toFixed(2);
+                    playerPosition.innerHTML = playerAngle.toFixed(2);
+                }
+                else{
+                    if(confirm('Game Over')){
+                        gameOver = false;
+                        window.location.reload();  
+                    }
+                }
+            }
+
+            function changeDirection(){
+                if(direction == 'left'){
+                    direction = 'right';
+                }
+                else{
+                    direction = 'left';
+                }
+            }
+
+            //draw stuff
+            function drawEarth(){
+                ctx.fillStyle = "#bb2";
+                ctx.beginPath();
+                ctx.arc(earthX, earthY, EARTH_RADIUS, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            function drawMoon(){
+                const moonX = earthX + MOON_ORBIT_RADIUS * Math.cos(moonAngle + earthAngle);
+                const moonY = earthY + MOON_ORBIT_RADIUS * Math.sin(moonAngle + earthAngle);
+                ctx.fillStyle = "#5a5";
+                ctx.beginPath();
+                ctx.arc(moonX, moonY, MOON_RADIUS, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            function drawPlayer(){
+                const playerX = earthX + PLAYER_ORBIT_RADIUS * Math.cos(earthAngle + playerAngle);
+                const playerY = earthY + PLAYER_ORBIT_RADIUS * Math.sin(earthAngle + playerAngle);
+                ctx.fillStyle = "red";
+                ctx.beginPath();
+                ctx.arc(playerX, playerY, PLAYER_RADIUS, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            function startTimer(){
+                let seconds = 0;
+                const timer = setInterval(() => {
+                    let hours = Math.floor(seconds / 3600);
+                    let minutes = Math.floor((seconds - hours * 3600) / 60);
+                    let remainingSeconds = seconds % 60;
+
+                    hours = hours < 10 ? `0${hours}` : hours;
+                    minutes = minutes < 10 ? `0${minutes}` : minutes;
+                    remainingSeconds = remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
+
+                    const timer = document.getElementById("timer");
+                    timer.innerHTML = `${hours}:${minutes}:${remainingSeconds}`;
+                    seconds++;
+                }, 1000);
+            }
+
+            function checkDirection(){
+                if(direction == 'left'){
+                    moonAngle -= 0.01;
+                }
+                else{
+                    moonAngle += 0.01;
+                }
+            }
+
+            function resetMoonAngle(){
+                if(moonAngle > 6.25){
+                    moonAngle = 0;
+                }
+                else if(moonAngle < 0){
+                    moonAngle = 6.25;
+                }
+            }
+
+            function checkHit(moonPosition, playerPosition, playerState){
+                if(playerState == 'idle' && moonPosition.toFixed(2) == playerPosition.toFixed(2)){
+                    gameOver = true;
+                }
+            }
+
+            document.addEventListener("keydown", keyDownEvent);
+            document.addEventListener("keyup", keyUpEvent);
+
+            //start functions
+            setInterval(animate, 1000 / 150);
+            startTimer();
+
+            //controls
+            function keyDownEvent(e){
+                switch(e.keyCode){
+                    case 40:
+                        playerState = 'crouch';
+                        PLAYER_ORBIT_RADIUS = 200;
+                        break;
+                    case 32:
+                        playerState = 'hit';
+                        PLAYER_RADIUS = 60;
+                        if(moonAngle > 5 || moonAngle > 5.6){
+                            changeDirection();
+                        }
+                        break;
+                }
+            }
+            function keyUpEvent(e){
+                switch(e.keyCode){
+                    case 40:
+                        playerState = 'idle';
+                        PLAYER_ORBIT_RADIUS = 250;
+                        break;
+                    case 32:
+                        playerState = 'idle';
+                        PLAYER_RADIUS = 50;
+                        break;
+                }
+            }
+        </script>
+    </body>
+</html>
